@@ -2,8 +2,8 @@
      File: Image_Viewer.swift
    Author: Kevin Messina
   Created: 6/21/24
- Modified: 08/21/2026 06:31 PM EDT
-  Version: 5
+ Modified: 10/15/2026 10:48 AM EDT
+  Version: 6
    Source: CODEX: (GPT-5) 🤖AI Code a portion or all of this code.
  
 ©2026 Creative App Solutions, LLC. - All Rights Reserved.
@@ -14,8 +14,48 @@ NOTES:
 import SwiftUI
 import UIKit
 import PDFKit
+import LinkPresentation
 import CASExternalFoundations
 import CASExternalBasics
+
+private final class ImageShareItem: NSObject, UIActivityItemSource {
+    private let image: UIImage
+    private let imageURL: URL?
+    private let title: String
+
+    init(image: UIImage, imageURL: URL?, title: String) {
+        self.image = image
+        self.imageURL = imageURL
+        self.title = title
+        super.init()
+    }
+
+    private var sharedItem: Any {
+        if let imageURL {
+            return imageURL
+        }
+        return image
+    }
+
+    func activityViewControllerPlaceholderItem(_ activityViewController: UIActivityViewController) -> Any {
+        sharedItem
+    }
+
+    func activityViewController(
+        _ activityViewController: UIActivityViewController,
+        itemForActivityType activityType: UIActivity.ActivityType?
+    ) -> Any? {
+        sharedItem
+    }
+
+    func activityViewControllerLinkMetadata(_ activityViewController: UIActivityViewController) -> LPLinkMetadata? {
+        let metadata = LPLinkMetadata()
+        metadata.title = title
+        metadata.imageProvider = NSItemProvider(object: image)
+        metadata.iconProvider = NSItemProvider(object: image)
+        return metadata
+    }
+}
 
 public struct ImageDetailView: UIViewRepresentable {
     private let uiImage: UIImage
@@ -83,11 +123,11 @@ public struct ImageViewer<BackgroundView: View>: View {
     }
 
     private var shareItems: [Any] {
+        if let uiImage {
+            return [ImageShareItem(image: uiImage, imageURL: imageURL, title: imageName)]
+        }
         if let imageURL {
             return [imageURL]
-        }
-        if let uiImage {
-            return [uiImage]
         }
         return []
     }
