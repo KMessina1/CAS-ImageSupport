@@ -2,8 +2,8 @@
      File: Image_Viewer.swift
    Author: Kevin Messina
   Created: 6/21/24
- Modified: 10/15/2026 10:48 AM EDT
-  Version: 6
+ Modified: 11/01/2026 03:08 PM EST
+  Version: 7
    Source: CODEX: (GPT-5) 🤖AI Code a portion or all of this code.
  
 ©2026 Creative App Solutions, LLC. - All Rights Reserved.
@@ -90,6 +90,10 @@ public struct ImageViewer<BackgroundView: View>: View {
     private let imageName: String
     private let backgroundView: BackgroundView
     private let txtColor: Color
+    private let needsPurchasable: Bool
+    private let subscriptionDestination: AnyView?
+    @State private var showSubscriptionRequired = false
+    @State private var showSubscriptions = false
 
     @State private var showShareSheet = false
     @State private var uiImage: UIImage?
@@ -100,12 +104,16 @@ public struct ImageViewer<BackgroundView: View>: View {
         imageURL: URL,
         imageName: String,
         backgroundView: BackgroundView,
-        txtColor: Color
+        txtColor: Color,
+        needsPurchasable: Bool = false,
+        subscriptionDestination: AnyView? = nil
     ) {
         self.imageURL = imageURL
         self.imageName = imageName
         self.backgroundView = backgroundView
         self.txtColor = txtColor
+        self.needsPurchasable = needsPurchasable
+        self.subscriptionDestination = subscriptionDestination
         _uiImage = State(initialValue: nil)
     }
 
@@ -113,12 +121,16 @@ public struct ImageViewer<BackgroundView: View>: View {
         uiImage: UIImage?,
         imageName: String = "(Unsaved Photo)",
         backgroundView: BackgroundView,
-        txtColor: Color
+        txtColor: Color,
+        needsPurchasable: Bool = false,
+        subscriptionDestination: AnyView? = nil
     ) {
         self.imageURL = nil
         self.imageName = imageName
         self.backgroundView = backgroundView
         self.txtColor = txtColor
+        self.needsPurchasable = needsPurchasable
+        self.subscriptionDestination = subscriptionDestination
         _uiImage = State(initialValue: uiImage)
     }
 
@@ -214,6 +226,10 @@ public struct ImageViewer<BackgroundView: View>: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        guard !needsPurchasable else {
+                            showSubscriptionRequired = true
+                            return
+                        }
                         if !shareItems.isEmpty {
                             showShareSheet.toggle()
                         }
@@ -226,6 +242,19 @@ public struct ImageViewer<BackgroundView: View>: View {
             }
             .sheet(isPresented: $showShareSheet) {
                 ActivityViewController(itemsToShare: shareItems)
+            }
+            .alert("Subscription Required", isPresented: $showSubscriptionRequired) {
+                if subscriptionDestination != nil {
+                    Button("Subscriptions") { showSubscriptions = true }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("This choice requires a subscription.")
+            }
+            .navigationDestination(isPresented: $showSubscriptions) {
+                if let subscriptionDestination {
+                    subscriptionDestination
+                }
             }
             .onAppear {
                 showProgress = true
